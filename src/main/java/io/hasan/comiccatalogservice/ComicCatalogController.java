@@ -17,10 +17,10 @@ import java.util.List;
 @RequestMapping(method= RequestMethod.GET,value="/catalog")
 public class ComicCatalogController {
 
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
-    public ComicCatalogController(WebClient webClient) {
-        this.webClient = webClient;
+    public ComicCatalogController(WebClient.Builder webClientBuilder) {
+        this.webClientBuilder = webClientBuilder;
     }
 
     @RequestMapping(method= RequestMethod.GET,value="/{userId}")
@@ -28,12 +28,12 @@ public class ComicCatalogController {
         // this will return the big response, which requires:
         // 1. userId
         // 2. comic rating - from comic-rating-service
-        UserRatings user_ratings = webClient
+        UserRatings user_ratings = webClientBuilder.build()
                 .get()
-                .uri("http://localhost:8083/ratings/"+userId)
+                .uri("http://comic-rating-service/ratings/"+userId)
                 .retrieve()
                 .bodyToMono(UserRatings.class)
-                .block(Duration.ofSeconds(5));
+                .block(Duration.ofSeconds(10));
 
         // 3. using comicIds from user_ratings, get comic info from comic-info-service
         // to do
