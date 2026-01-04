@@ -1,4 +1,4 @@
-package io.hasan.comiccatalogservice;
+package io.hasan.comiccatalogservice.Models;
 
 public class CatalogItem {
 
