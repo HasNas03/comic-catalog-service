@@ -39,5 +39,5 @@
   - **CatalogController**
     - REST controller for the Catalog microservice (/catalog)
 
-  - **RatingService**
+  - **CatalogService**
     - Service layer containing the business logic
