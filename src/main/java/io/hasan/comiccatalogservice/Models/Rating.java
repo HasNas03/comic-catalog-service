@@ -1,24 +1,28 @@
 package io.hasan.comiccatalogservice.Models;
+import java.util.UUID;
 
 public class Rating {
 
     // attributes
-    private String userId;
-    private String comicId;
-    private int comicRating;
+    private UUID ratingId;
+    private UUID comicId;
+    private int ratingScore;
+    private String ratingReview;
 
     // constructor
-    public Rating(String userId, String comicId, int comicRating) {
-        this.userId = userId;
+    public Rating(){};
+    public Rating(UUID comicId, int ratingScore, String ratingReview) {
         this.comicId = comicId;
-        this.comicRating = comicRating;
-    }
+        this.ratingScore = ratingScore;
+        this.ratingReview = ratingReview;}
 
     // getters and setters
-    public String getUserId() {return userId;}
-    public void setUserId(String userId) {this.userId = userId;}
-    public String getComicId() {return comicId;}
-    public void setComicId(String comicId) {this.comicId = comicId;}
-    public int getComicRating() {return comicRating;}
-    public void setComicRating(int comicRating) {this.comicRating = comicRating;}
+    public UUID getRatingId() {return ratingId;}
+    public void setRatingId(UUID ratingId) {this.ratingId = ratingId;}
+    public UUID getComicId() {return comicId;}
+    public void setComicId(UUID comicId) {this.comicId = comicId;}
+    public int getRatingScore() {return ratingScore;}
+    public void setRatingScore(int ratingScore) {this.ratingScore = ratingScore;}
+    public String getRatingReview() {return ratingReview;}
+    public void setRatingReview(String ratingReview) {this.ratingReview = ratingReview;}
 }
