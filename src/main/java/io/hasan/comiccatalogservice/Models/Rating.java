@@ -1,6 +1,7 @@
 package io.hasan.comiccatalogservice.Models;
 import java.util.UUID;
 
+// rating DTO
 public class Rating {
 
     // attributes

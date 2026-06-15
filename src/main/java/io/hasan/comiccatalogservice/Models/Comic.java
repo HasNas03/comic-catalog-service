@@ -1,6 +1,7 @@
 package io.hasan.comiccatalogservice.Models;
 import java.util.UUID;
 
+// comic DTO
 public class Comic {
 
     // attributes
