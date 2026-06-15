@@ -1,4 +1,4 @@
-**Comic Catalog Project**
+## Comic Catalog Project
 
 - The Comic Catalog is a personal-use project aiming to develop a custom application for storing comic book reviews and reading progress
 
@@ -10,14 +10,14 @@
     - [Comic Catalog Discovery Server](https://github.com/HasNas03/discovery-server)
 
 
-- The project is also a gateway for me to learn and practice:
+- The project is also a gateway for me to practice:
     - backend development (Java & Spring) best practices
-    - developing REST APIs
-    - connecting to external APIs
+    - working with REST APIs
     - cross-microservice integration/authentication
     - testing and security
-    - external database integration
-    - Cloud integration/hosting
+    - database integration
+    - cloud integration/hosting
+
 
 - Technologies
     - Current technologies                 : Java, Spring (Boot, Web), Netflix Eureka, Maven, Git
@@ -26,19 +26,59 @@
 ---
 
 ---
-**Comic Catalog Microservice**
+## Comic Catalog Microservice
 
-- The catalog service is responsible for instantiating intern API calls to the appropriate microservices. This is done to retrieve rating/comic info so that it can be formatted for the client response
-- The Comic Rating API provides REST endpoints for the Comic Catalog Microservice to interact with the Rating database
+- The frontend-facing API for the Comic Catalog project.
+- This service does not own persistent data. It calls the info and rating services through a load-balanced 
+- `WebClient.Builder`, using Eureka service names instead of hardcoded ports.
 
+### Models
+`Comic DTO`
+- `UUID id`
+- `String title`
+- `String publisher`
+- `Integer startYear`
+- `String description`
 
-- Architecture (suggestions/improvements are welcome/encouraged!):
-  - **CatalogItem (Model)**
-    - CatalogItem(String comicId, String comicName, String comicDesc, int comicRating)
-    - DTO used in API responses to combine rating and comic information for responses
+`Rating DTO`
+- `UUID id`
+- `UUID comicId`
+- `int score`
+- `String reviewText`
 
-  - **CatalogController**
-    - REST controller for the Catalog microservice (/catalog)
+`CatalogItem`
+- `UUID comicId`
+- `String title`
+- `String publisher`
+- `Integer startYear`
+- `String description`
+- `UUID ratingId`
+- `Integer score`
+- `String reviewText`
 
-  - **CatalogService**
-    - Service layer containing the business logic
+### Endpoints
+
+Combined catalog view:
+
+```text
+GET /catalog
+```
+
+Comic forwarding:
+
+```text
+GET    /catalog/comics
+GET    /catalog/comics/{id}
+POST   /catalog/comics
+PUT    /catalog/comics/{id}
+DELETE /catalog/comics/{id}
+```
+
+Rating forwarding:
+
+```text
+GET    /catalog/ratings
+GET    /catalog/ratings/comics/{comicId}
+POST   /catalog/ratings
+PUT    /catalog/ratings/{id}
+DELETE /catalog/ratings/{id}

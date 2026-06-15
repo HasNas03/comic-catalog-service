@@ -1,8 +1,8 @@
 package io.hasan.comiccatalogservice;
 
-import io.hasan.comiccatalogservice.Models.CatalogItem;
-import io.hasan.comiccatalogservice.Models.Comic;
-import io.hasan.comiccatalogservice.Models.Rating;
+import io.hasan.comiccatalogservice.models.CatalogItem;
+import io.hasan.comiccatalogservice.models.Comic;
+import io.hasan.comiccatalogservice.models.Rating;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;

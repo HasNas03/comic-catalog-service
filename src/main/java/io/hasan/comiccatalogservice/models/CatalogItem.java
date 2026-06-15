@@ -1,4 +1,4 @@
-package io.hasan.comiccatalogservice.Models;
+package io.hasan.comiccatalogservice.models;
 import java.util.UUID;
 
 public class CatalogItem {
