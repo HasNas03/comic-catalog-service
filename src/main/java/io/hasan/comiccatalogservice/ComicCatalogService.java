@@ -33,7 +33,7 @@ public class ComicCatalogService {
         List<Comic> comics = getComics();
         // calls getRatings() to comic-rating-service to get List<Rating>.
         List<Rating> ratings = getRatings();
-        // converts List<Rating> into  Map<UUID, Rating>, key is each rating's comicId attribute
+        // converts List<Rating> into  Map<UUID, Rating> for easier retrieval, key is each rating's comicId attribute
         Map<UUID, Rating> ratingsByComicId = ratings.stream()
                 .collect(Collectors.toMap(Rating::getComicId, Function.identity(), (first, second) -> first));
         // for each comic object, find rating object in 'ratingsByComicId' and use both objects to create CatalogItem list
@@ -96,6 +96,7 @@ public class ComicCatalogService {
     }
     // 7. update a Rating for an existing comic
     public Rating updateRating(UUID ratingId, Rating rating) {
+        // TODO: check if this call is needed
         verifyComicExists(rating);
 
         return webClientBuilder.build()
@@ -173,7 +174,7 @@ public class ComicCatalogService {
     // get a Rating for comic based on comicId
     private Rating getRatingForComic(UUID comicId) {
         return webClientBuilder.build()
-                .get().uri(COMIC_RATING_SERVICE_URL + "/" + comicId) // + "/comics/"
+                .get().uri(COMIC_RATING_SERVICE_URL + "/comics/" + comicId) // + "/comics/"
                 .retrieve()
                 .bodyToMono(Rating.class)
                 .block(REQUEST_TIMEOUT);
