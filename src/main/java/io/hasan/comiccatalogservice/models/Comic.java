@@ -13,8 +13,7 @@ public class Comic {
 
     // constructor
     public Comic() {}
-    public Comic(UUID comicId, String comicTitle, String comicIssue, String comicStartYear, String comicDesc) {
-        this.comicId = comicId;
+    public Comic(String comicTitle, String comicIssue, String comicStartYear, String comicDesc) {
         this.comicTitle = comicTitle;
         this.comicIssue = comicIssue;
         this.comicStartYear = comicStartYear;

@@ -34,3 +34,6 @@ build/
 
 ### macOS ###
 .DS_Store
+
+### tests ###
+src/test/java/io/hasan/comiccatalogservice/ComicCatalogServiceTests.java

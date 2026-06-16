@@ -73,11 +73,14 @@ public class ComicCatalogService {
     }
     // 5. delete an existing comic
     public void deleteComic(UUID comicId) {
+        // delete the comic
         webClientBuilder.build()
                 .delete().uri(COMIC_INFO_SERVICE_URL + "/" + comicId)
                 .retrieve()
                 .toBodilessEntity()
                 .block(REQUEST_TIMEOUT);
+        // delete it's associated rating (if exists)
+        deleteRatingForComic(comicId);
     }
 
     // 6. add a Rating for an existing comic
@@ -181,4 +184,21 @@ public class ComicCatalogService {
             getComic(rating.getComicId());
         }
     }
+    // delete Rating
+    private void deleteRatingForComic(UUID comicId) {
+        try {
+            Rating rating = getRatingForComic(comicId);
+            deleteRating(rating.getRatingId());
+        } catch (WebClientResponseException.NotFound ignored) {
+        }
+    }
+    //temp
+//    List<CatalogItem> buildCatalog(List<Comic> comics, List<Rating> ratings) {
+//        Map<UUID, Rating> ratingsByComicId = ratings.stream()
+//                .collect(Collectors.toMap(Rating::getComicId, Function.identity(), (first, second) -> first));
+//
+//        return comics.stream()
+//                .map(comic -> toCatalogItem(comic, ratingsByComicId.get(comic.getComicId())))
+//                .toList();
+//    }
 }
