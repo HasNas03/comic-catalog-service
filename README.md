@@ -62,23 +62,13 @@ Combined catalog view:
 
 ```text
 GET /catalog
-```
 
-Comic forwarding:
-
-```text
-GET    /catalog/comics
-GET    /catalog/comics/{id}
+GET    /catalog/{comicId}
 POST   /catalog/comics
-PUT    /catalog/comics/{id}
-DELETE /catalog/comics/{id}
-```
+PUT    /catalog/comics/{comicId}
+DELETE /catalog/comics/{comicId}
 
-Rating forwarding:
-
-```text
-GET    /catalog/ratings
-GET    /catalog/ratings/comics/{comicId}
 POST   /catalog/ratings
-PUT    /catalog/ratings/{id}
-DELETE /catalog/ratings/{id}
+PUT    /catalog/ratings/{ratingId}
+DELETE /catalog/ratings/{ratingId}
+```
