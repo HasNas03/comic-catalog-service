@@ -23,7 +23,7 @@
 - Technologies
     - Current technologies                 : Java, Spring (Boot, Web), Netflix Eureka, Maven, Git
     - Future best practices/implementations: external databases, isolate env. variables/secrets (e.g. Vault and/or external configs), high fault tolerance (e.g. Netflix Hystrix)
-    - Future technologies                  : (SQL/MongoDB), Docker, AWS, Spring Security
+    - Future integrations                  : Persistent database (SQL/MongoDB), Containerization (Docker), Extended security (Spring Security), Users
 ---
 
 ---
