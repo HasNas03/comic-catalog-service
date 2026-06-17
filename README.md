@@ -4,6 +4,7 @@
 
 
 - This is a list of repositories for all microservices/servers used in this project
+    - [Comic Catalog Frontend (user-facing)](https://github.com/HasNas03/comic-frontend)
     - [Comic Catalog Microservice (primary client-facing API)](https://github.com/HasNas03/comic-catalog-service)
     - [Comic Info Service Microservice](https://github.com/HasNas03/comic-info-service)
     - [Comic Rating Microservice](https://github.com/HasNas03/comic-rating-service)
