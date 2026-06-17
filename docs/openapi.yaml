@@ -1,0 +1,208 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8081
+  description: Generated server url
+paths:
+  /catalog/ratings/{id}:
+    put:
+      tags:
+      - comic-catalog-controller
+      operationId: updateRating
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Rating"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Rating"
+    delete:
+      tags:
+      - comic-catalog-controller
+      operationId: deleteRating
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+  /catalog/comics/{id}:
+    put:
+      tags:
+      - comic-catalog-controller
+      operationId: updateComic
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Comic"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Comic"
+    delete:
+      tags:
+      - comic-catalog-controller
+      operationId: deleteComic
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+  /catalog/ratings:
+    post:
+      tags:
+      - comic-catalog-controller
+      operationId: addRating
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Rating"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Rating"
+  /catalog/comics:
+    post:
+      tags:
+      - comic-catalog-controller
+      operationId: addComic
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Comic"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Comic"
+  /catalog:
+    get:
+      tags:
+      - comic-catalog-controller
+      operationId: getCatalog
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogItem"
+  /catalog/{id}:
+    get:
+      tags:
+      - comic-catalog-controller
+      operationId: getCatalogItem
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CatalogItem"
+components:
+  schemas:
+    Rating:
+      type: object
+      properties:
+        ratingId:
+          type: string
+          format: uuid
+        comicId:
+          type: string
+          format: uuid
+        ratingScore:
+          type: integer
+          format: int32
+        ratingReview:
+          type: string
+    Comic:
+      type: object
+      properties:
+        comicId:
+          type: string
+          format: uuid
+        comicTitle:
+          type: string
+        comicIssue:
+          type: string
+        comicStartYear:
+          type: string
+        comicDesc:
+          type: string
+    CatalogItem:
+      type: object
+      properties:
+        comicId:
+          type: string
+          format: uuid
+        comicTitle:
+          type: string
+        comicIssue:
+          type: string
+        comicStartYear:
+          type: integer
+          format: int32
+        comicDesc:
+          type: string
+        ratingId:
+          type: string
+          format: uuid
+        ratingScore:
+          type: integer
+          format: int32
+        ratingReview:
+          type: string
