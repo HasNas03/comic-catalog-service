@@ -1,6 +1,7 @@
 package io.hasan.comiccatalogservice;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +10,7 @@ import io.hasan.comiccatalogservice.models.CatalogItem;
 import io.hasan.comiccatalogservice.models.Comic;
 import io.hasan.comiccatalogservice.models.Rating;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,4 +69,44 @@ public class ComicCatalogController {
     public ResponseEntity<Void> deleteRating(@PathVariable UUID id) {
         comicCatalogService.deleteRating(id);
         return ResponseEntity.noContent().build();}
+
+    // ------------------------------------ COMIC COVER IMAGE -----------------------------
+
+    @PostMapping(value = "/comics/{comicId}/image", consumes = "multipart/form-data")
+    public Comic addComicImage(@PathVariable UUID comicId, @RequestPart("image") MultipartFile image) {
+        // Receives the uploaded cover image file from the frontend
+        // forwards image to comic-info-service
+        // comicId identifies which existing Comic record should receive this cover image via matching the comicId
+        return comicCatalogService.addComicImage(comicId, image);
+    }
+
+    @PutMapping(value = "/comics/{comicId}/image", consumes = "multipart/form-data")
+    public Comic updateComicImage(@PathVariable UUID comicId, @RequestPart("image") MultipartFile image) {
+        // receives a replacement cover image file for an existing comic
+        // CatalogService forwards this as a PUT request to comic-info-service, overwriting the old image
+        return comicCatalogService.updateComicImage(comicId, image);
+    }
+
+    @GetMapping(value = "/comics/{comicId}/image", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> getComicImage(@PathVariable UUID comicId) {
+        // Ask catalog service to fetch the raw image bytes from comic-info-service.
+        byte[] image = comicCatalogService.getComicImage(comicId);
+
+        // Return those bytes as a real JPEG response so browsers can render it in an img tag.
+        // contentLength is not required, but it helps confirm the response is not empty.
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .contentLength(image.length)
+                .body(image);
+    }
+
+    @DeleteMapping("/comics/{comicId}/image")
+    public ResponseEntity<Void> deleteComicImage(@PathVariable UUID comicId) {
+        // Tell comic-info-service to delete the stored image file and clear comicImagePath.
+        comicCatalogService.deleteComicImage(comicId);
+        // 204 means the delete succeeded and there is no response body to return.
+        return ResponseEntity.noContent().build();
+    }
+
 }
