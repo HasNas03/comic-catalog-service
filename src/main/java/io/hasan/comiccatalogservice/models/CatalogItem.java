@@ -9,18 +9,20 @@ public class CatalogItem {
     private String comicIssue;
     private Integer comicStartYear;
     private String comicDesc;
+    private String comicImagePath;
     private UUID ratingId;
     private Integer ratingScore;
     private String ratingReview;
 
     // constructors
     public CatalogItem(){};
-    public CatalogItem(UUID comicId, String comicTitle, String comicIssue, Integer comicStartYear, String comicDesc, UUID ratingId, Integer ratingScore, String ratingReview) {
+    public CatalogItem(UUID comicId, String comicTitle, String comicIssue, Integer comicStartYear, String comicDesc, String comicImagePath, UUID ratingId, Integer ratingScore, String ratingReview) {
         this.comicId = comicId;
         this.comicTitle = comicTitle;
         this.comicIssue = comicIssue;
         this.comicStartYear = comicStartYear;
         this.comicDesc = comicDesc;
+        this.comicImagePath = comicImagePath;
         this.ratingId = ratingId;
         this.ratingScore = ratingScore;
         this.ratingReview = ratingReview;}
@@ -36,6 +38,8 @@ public class CatalogItem {
     public void setComicStartYear(Integer comicStartYear) {this.comicStartYear = comicStartYear;}
     public String getComicDesc() {return comicDesc;}
     public void setComicDesc(String comicDesc) {this.comicDesc = comicDesc;}
+    public String getComicImagePath() {return comicImagePath;}
+    public void setComicImagePath(String comicImagePath) {this.comicImagePath = comicImagePath;}
     public UUID getRatingId() {return ratingId;}
     public void setRatingId(UUID ratingId) {this.ratingId = ratingId;}
     public Integer getRatingScore() {return ratingScore;}

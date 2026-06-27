@@ -4,10 +4,17 @@ import io.hasan.comiccatalogservice.models.CatalogItem;
 import io.hasan.comiccatalogservice.models.Comic;
 import io.hasan.comiccatalogservice.models.Rating;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +59,6 @@ public class ComicCatalogService {
         }
         return toCatalogItem(comic, rating);
     }
-
     // 3. add a new comic
     public Comic addComic(Comic comic) {
         return webClientBuilder.build()
@@ -116,6 +122,61 @@ public class ComicCatalogService {
                 .block(REQUEST_TIMEOUT);
     }
 
+    // 9. add comic cover image
+    public Comic addComicImage(UUID comicId, MultipartFile image) {
+        // helper builds the multipart request and sends it to comic-info-service,
+        // with POST meaning "ADD a cover image to this comic"
+        return sendComicImage(comicId, image, true);
+    }
+
+    // 10. update comic cover image
+    public Comic updateComicImage(UUID comicId, MultipartFile image) {
+        // helper builds the multipart request and sends it to comic-info-service,
+        // with PUT meaning "UPDATE a cover image to this comic"
+        return sendComicImage(comicId, image, false);
+    }
+
+    // 11. get a comic cover image
+    public byte[] getComicImage(UUID comicId) {
+        // build the internal comic-info-service URL using the service name registered in Eureka
+        String imageUrl = COMIC_INFO_SERVICE_URL + "/" + comicId + "/image";
+
+        // Fetch the image as raw DataBuffer chunks instead of bodyToMono(byte[].class).
+        // In this Spring/WebClient setup, decoding image/jpeg directly into byte[] produced an empty response.
+        // DataBuffer lets us stream the raw HTTP body bytes without asking WebClient to understand JPEG.
+        return webClientBuilder.build()
+                .get().uri(imageUrl)
+                .retrieve()
+                .bodyToFlux(DataBuffer.class)
+                .reduce(new ByteArrayOutputStream(), (outputStream, dataBuffer) -> {
+                    // Allocate exactly enough space for this response chunk.
+                    byte[] chunk = new byte[dataBuffer.readableByteCount()];
+                    // Copy the chunk bytes out of the DataBuffer.
+                    dataBuffer.read(chunk);
+                    // Append this chunk to the full image response.
+                    outputStream.writeBytes(chunk);
+                    // Release the DataBuffer so Netty/Spring can clean up pooled memory.
+                    DataBufferUtils.release(dataBuffer);
+                    // Return the same output stream so reduce can keep accumulating chunks.
+                    return outputStream;
+                })
+                // Convert the accumulated stream into the final byte[] returned to the controller.
+                .map(ByteArrayOutputStream::toByteArray)
+                // Block because this service is written in a simple synchronous MVC style for now.
+                .block(REQUEST_TIMEOUT);
+    }
+
+    // 12. delete a comic cover image
+    public void deleteComicImage(UUID comicId) {
+        // Forward the delete request to comic-info-service, which owns image storage.
+        webClientBuilder.build()
+                .delete().uri(COMIC_INFO_SERVICE_URL + "/" + comicId + "/image")
+                .retrieve()
+                // We only need to know the request succeeded; there is no useful response body.
+                .toBodilessEntity()
+                .block(REQUEST_TIMEOUT);
+    }
+
     // -------------------------- HELPERS --------------------------
 
     // get list of all Comics
@@ -147,6 +208,7 @@ public class ComicCatalogService {
                     comic.getComicIssue(),
                     Integer.parseInt(comic.getComicStartYear()),
                     comic.getComicDesc(),
+                    comic.getComicImagePath(),
                     null,
                     null,
                     null
@@ -158,6 +220,7 @@ public class ComicCatalogService {
                 comic.getComicIssue(),
                 Integer.parseInt(comic.getComicStartYear()),
                 comic.getComicDesc(),
+                comic.getComicImagePath(),
                 rating.getRatingId(),
                 rating.getRatingScore(),
                 rating.getRatingReview()
@@ -193,13 +256,31 @@ public class ComicCatalogService {
         } catch (WebClientResponseException.NotFound ignored) {
         }
     }
-    //temp
-//    List<CatalogItem> buildCatalog(List<Comic> comics, List<Rating> ratings) {
-//        Map<UUID, Rating> ratingsByComicId = ratings.stream()
-//                .collect(Collectors.toMap(Rating::getComicId, Function.identity(), (first, second) -> first));
-//
-//        return comics.stream()
-//                .map(comic -> toCatalogItem(comic, ratingsByComicId.get(comic.getComicId())))
-//                .toList();
-//    }
+    // Shared helper for add/update image uploads.
+    private Comic sendComicImage(UUID comicId, MultipartFile image, boolean create) {
+        // MultipartBodyBuilder creates the form-data body expected by comic-info-service.
+        MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
+
+        // MultipartFile wraps the uploaded file from the frontend.
+        // getResource() exposes the file as streamable bytes for WebClient.
+        Resource imageResource = image.getResource();
+
+        // The part name "image" must match @RequestPart("image") in comic-info-service.
+        // The filename is forwarded so the downstream request still looks like a normal file upload.
+        bodyBuilder.part("image", imageResource)
+                .filename(image.getOriginalFilename());
+
+        // POST adds an image for the first time; PUT replaces an existing image.
+        WebClient.RequestBodySpec request = create
+                ? webClientBuilder.build().post().uri(COMIC_INFO_SERVICE_URL + "/" + comicId + "/image")
+                : webClientBuilder.build().put().uri(COMIC_INFO_SERVICE_URL + "/" + comicId + "/image");
+
+        // Send the multipart body to comic-info-service and deserialize the updated Comic it returns.
+        return request
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .retrieve()
+                .bodyToMono(Comic.class)
+                .block(REQUEST_TIMEOUT);
+    }
+
 }
