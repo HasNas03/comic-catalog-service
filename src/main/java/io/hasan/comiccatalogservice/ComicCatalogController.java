@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.hasan.comiccatalogservice.models.CatalogItem;
+import io.hasan.comiccatalogservice.models.CollectionCatalog;
+import io.hasan.comiccatalogservice.models.Collection;
 import io.hasan.comiccatalogservice.models.Comic;
 import io.hasan.comiccatalogservice.models.Rating;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +21,11 @@ import java.util.UUID;
 public class ComicCatalogController {
 
     private final ComicCatalogService comicCatalogService;
+    private final CollectionService CollectionService;
 
-    public ComicCatalogController(ComicCatalogService comicCatalogService) {
-        this.comicCatalogService = comicCatalogService;}
+    public ComicCatalogController(ComicCatalogService comicCatalogService, CollectionService CollectionService) {
+        this.comicCatalogService = comicCatalogService;
+        this.CollectionService = CollectionService;}
 
     // ------------------------------------ COMICS -----------------------------
     // retrieves all comics + ratings
@@ -69,6 +73,64 @@ public class ComicCatalogController {
     public ResponseEntity<Void> deleteRating(@PathVariable UUID id) {
         comicCatalogService.deleteRating(id);
         return ResponseEntity.noContent().build();}
+
+
+    // ------------------------------------ COLLECTIONS -----------------------------
+
+    // retrieve all collection folders stored by catalog
+    @GetMapping("/collections")
+    public List<CollectionCatalog> getCollections() {
+        // Return frontend-ready collection DTOs instead of raw JPA entities.
+        return CollectionService.getCollections();
+    }
+
+    // retrieve one collection folder plus its resolved catalog items
+    @GetMapping("/collections/{collectionId}")
+    public CollectionCatalog getCollection(@PathVariable UUID collectionId) {
+        // The service loads collection membership rows, then resolves each comicId into CatalogItem data.
+        return CollectionService.getCollection(collectionId);
+    }
+
+    // create a new collection folder
+    @PostMapping("/collections")
+    public ResponseEntity<Collection> addCollection(@RequestBody Collection collection) {
+        // The request body contains collectionName and optional collectionDesc.
+        Collection created = CollectionService.addCollection(collection);
+        // 201 tells the frontend a new persistent collection row was created.
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    // update a collection folder's name/description
+    @PutMapping("/collections/{collectionId}")
+    public Collection updateCollection(@PathVariable UUID collectionId, @RequestBody Collection collection) {
+        // The path ID decides which collection is edited; the body provides the new values.
+        return CollectionService.updateCollection(collectionId, collection);
+    }
+
+    // delete a collection folder and its saved comic memberships
+    @DeleteMapping("/collections/{collectionId}")
+    public ResponseEntity<Void> deleteCollection(@PathVariable UUID collectionId) {
+        // Deleting the folder does not delete comics from comic-info-service.
+        CollectionService.deleteCollection(collectionId);
+        // 204 means delete succeeded and no response body is needed.
+        return ResponseEntity.noContent().build();
+    }
+
+    // add an existing comic to an existing collection folder
+    @PostMapping("/collections/{collectionId}/comics/{comicId}")
+    public CollectionCatalog addComicToCollection(@PathVariable UUID collectionId, @PathVariable UUID comicId) {
+        // The service verifies both IDs, saves the membership row, and returns the updated collection.
+        return CollectionService.addComicToCollection(collectionId, comicId);
+    }
+
+    // remove one comic from one collection folder
+    @DeleteMapping("/collections/{collectionId}/comics/{comicId}")
+    public ResponseEntity<Void> removeComicFromCollection(@PathVariable UUID collectionId, @PathVariable UUID comicId) {
+        // Removing from a collection only deletes the membership row, not the comic itself.
+        CollectionService.removeComicFromCollection(collectionId, comicId);
+        // 204 means the membership was removed and no response body is needed.
+        return ResponseEntity.noContent().build();
+    }
 
     // ------------------------------------ COMIC COVER IMAGE -----------------------------
 
