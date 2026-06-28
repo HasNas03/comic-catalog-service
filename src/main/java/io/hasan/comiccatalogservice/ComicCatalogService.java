@@ -3,12 +3,14 @@ package io.hasan.comiccatalogservice;
 import io.hasan.comiccatalogservice.models.CatalogItem;
 import io.hasan.comiccatalogservice.models.Comic;
 import io.hasan.comiccatalogservice.models.Rating;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,10 +31,18 @@ public class ComicCatalogService {
     private static final String COMIC_INFO_SERVICE_URL = "http://comic-info-service/comics";
     private static final String COMIC_RATING_SERVICE_URL = "http://comic-rating-service/ratings";
     private final WebClient.Builder webClientBuilder;
+    private final CollectionRepository CollectionRepository;
 
-    // constructor
+    // constructor used by Spring during normal application startup
+    @Autowired
+    public ComicCatalogService(WebClient.Builder webClientBuilder, CollectionRepository CollectionRepository) {
+        this.webClientBuilder = webClientBuilder;
+        this.CollectionRepository = CollectionRepository;}
+
+    // constructor kept for older unit tests that manually create ComicCatalogService without Spring/JPA
     public ComicCatalogService(WebClient.Builder webClientBuilder) {
-        this.webClientBuilder = webClientBuilder;}
+        this.webClientBuilder = webClientBuilder;
+        this.CollectionRepository = null;}
 
     // 1. get all Comics and their Ratings -> merge into List<CatalogItem>
     public List<CatalogItem> getCatalog() {
@@ -78,15 +88,23 @@ public class ComicCatalogService {
                 .block(REQUEST_TIMEOUT);
     }
     // 5. delete an existing comic
+    @Transactional
     public void deleteComic(UUID comicId) {
-        // delete the comic
+        // delete the comic from comic-info-service, which owns comic metadata
         webClientBuilder.build()
                 .delete().uri(COMIC_INFO_SERVICE_URL + "/" + comicId)
                 .retrieve()
                 .toBodilessEntity()
                 .block(REQUEST_TIMEOUT);
-        // delete it's associated rating (if exists)
+        // delete its associated rating from comic-rating-service if one exists
         deleteRatingForComic(comicId);
+        // remove this comicId from any catalog-owned collections so folders do not point at a deleted comic
+        if (CollectionRepository != null) {
+            CollectionRepository.findCollectionsContainingComicId(comicId).forEach(collection -> {
+                collection.getComicIds().remove(comicId);
+                CollectionRepository.save(collection);
+            });
+        }
     }
 
     // 6. add a Rating for an existing comic
