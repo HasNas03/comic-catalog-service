@@ -97,8 +97,10 @@ public class CollectionService {
     public CollectionCatalog addComicToCollection(UUID collectionId, UUID comicId) {
         // confirm the collection exists before adding a comic ID to it
         Collection collection = getCollectionOrThrow(collectionId);
-        // confirm the comic exists in comic-info-service through existing catalog flow
-        comicCatalogService.getCatalogItem(comicId);
+        // confirm the comic exists and has been moved into the main library before adding it to collections
+        if (!comicCatalogService.isLibraryComic(comicId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Wanted comics must be moved to library before collection");
+        }
         // prevent duplicate comics in same collection
         if (collection.getComicIds().contains(comicId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Comic is already in this collection");
