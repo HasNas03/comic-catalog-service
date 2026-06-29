@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -30,6 +32,8 @@ public class ComicCatalogService {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final String COMIC_INFO_SERVICE_URL = "http://comic-info-service/comics";
     private static final String COMIC_RATING_SERVICE_URL = "http://comic-rating-service/ratings";
+    private static final String STATUS_LIBRARY = "LIBRARY";
+    private static final String STATUS_WANTED = "WANTED";
     private final WebClient.Builder webClientBuilder;
     private final CollectionRepository CollectionRepository;
 
@@ -46,18 +50,10 @@ public class ComicCatalogService {
 
     // 1. get all Comics and their Ratings -> merge into List<CatalogItem>
     public List<CatalogItem> getCatalog() {
-        // calls getComics() to comic-info-service to get List<Comic>.
-        List<Comic> comics = getComics();
-        // calls getRatings() to comic-rating-service to get List<Rating>.
-        List<Rating> ratings = getRatings();
-        // converts List<Rating> into  Map<UUID, Rating> for easier retrieval, key is each rating's comicId attribute
-        Map<UUID, Rating> ratingsByComicId = ratings.stream()
-                .collect(Collectors.toMap(Rating::getComicId, Function.identity(), (first, second) -> first));
-        // for each comic object, find rating object in 'ratingsByComicId' and use both objects to create CatalogItem list
-        return comics.stream()
-                .map(comic -> toCatalogItem(comic, ratingsByComicId.get(comic.getComicId())))
-                .toList();
+        // The home/library page should only show comics that have moved into the main library.
+        return getCatalogByStatus(STATUS_LIBRARY);
     }
+
     // 2. get 1 Comic + its Rating
     public CatalogItem getCatalogItem(UUID id) {
         Comic comic = getComic(id); // 404 here => comic doesn't exist, propagates correctly
@@ -71,6 +67,7 @@ public class ComicCatalogService {
     }
     // 3. add a new comic
     public Comic addComic(Comic comic) {
+        comic.setComicStatus(STATUS_LIBRARY);
         return webClientBuilder.build()
                 .post().uri(COMIC_INFO_SERVICE_URL)
                 .bodyValue(comic)
@@ -78,6 +75,7 @@ public class ComicCatalogService {
                 .bodyToMono(Comic.class)
                 .block(REQUEST_TIMEOUT);
     }
+
     // 4. update an existing comic
     public Comic updateComic(UUID comicId, Comic comic) {
         return webClientBuilder.build()
@@ -87,6 +85,7 @@ public class ComicCatalogService {
                 .bodyToMono(Comic.class)
                 .block(REQUEST_TIMEOUT);
     }
+
     // 5. delete an existing comic
     @Transactional
     public void deleteComic(UUID comicId) {
@@ -109,7 +108,7 @@ public class ComicCatalogService {
 
     // 6. add a Rating for an existing comic
     public Rating addRating(Rating rating) {
-        verifyComicExists(rating);
+        verifyComicIsInLibrary(rating);
 
         return webClientBuilder.build()
                 .post().uri(COMIC_RATING_SERVICE_URL)
@@ -120,9 +119,6 @@ public class ComicCatalogService {
     }
     // 7. update a Rating for an existing comic
     public Rating updateRating(UUID ratingId, Rating rating) {
-        // TODO: check if this call is needed
-        verifyComicExists(rating);
-
         return webClientBuilder.build()
                 .put().uri(COMIC_RATING_SERVICE_URL + "/" + ratingId)
                 .bodyValue(rating)
@@ -195,7 +191,49 @@ public class ComicCatalogService {
                 .block(REQUEST_TIMEOUT);
     }
 
+    // 13. get all wanted comics
+    public List<CatalogItem> getWantedCatalog() {
+        // wanted comics are stored in comic-info-service too, but shown on their own page
+        return getCatalogByStatus(STATUS_WANTED);
+    }
+
+    // 14. add a wanted comic
+    public Comic addWantedComic(Comic comic) {
+        comic.setComicStatus(STATUS_WANTED);
+        return webClientBuilder.build()
+                .post().uri(COMIC_INFO_SERVICE_URL)
+                .bodyValue(comic)
+                .retrieve()
+                .bodyToMono(Comic.class)
+                .block(REQUEST_TIMEOUT);
+    }
+
+    // 15. move a wanted comic to normal
+    public Comic moveWantedComicToLibrary(UUID comicId) {
+        Comic comic = getComic(comicId);
+        if (!isWantedComic(comic)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Comic is not Wanted");
+        }
+        comic.setComicStatus(STATUS_LIBRARY);
+        return updateComic(comicId, comic);
+    }
+
     // -------------------------- HELPERS --------------------------
+
+    private List<CatalogItem> getCatalogByStatus(String status) {
+        // calls getComics() to comic-info-service to get List<Comic>.
+        List<Comic> comics = getComics();
+        // calls getRatings() to comic-rating-service to get List<Rating>.
+        List<Rating> ratings = getRatings();
+        // converts List<Rating> into  Map<UUID, Rating> for easier retrieval, key is each rating's comicId attribute
+        Map<UUID, Rating> ratingsByComicId = ratings.stream()
+                .collect(Collectors.toMap(Rating::getComicId, Function.identity(), (first, second) -> first));
+        // for each comic object with the requested status, find rating object and create CatalogItem list
+        return comics.stream()
+                .filter(comic -> status.equals(effectiveStatus(comic)))
+                .map(comic -> toCatalogItem(comic, ratingsByComicId.get(comic.getComicId())))
+                .toList();
+    }
 
     // get list of all Comics
     private List<Comic> getComics() {
@@ -227,6 +265,7 @@ public class ComicCatalogService {
                     Integer.parseInt(comic.getComicStartYear()),
                     comic.getComicDesc(),
                     comic.getComicImagePath(),
+                    effectiveStatus(comic),
                     null,
                     null,
                     null
@@ -239,6 +278,7 @@ public class ComicCatalogService {
                 Integer.parseInt(comic.getComicStartYear()),
                 comic.getComicDesc(),
                 comic.getComicImagePath(),
+                effectiveStatus(comic),
                 rating.getRatingId(),
                 rating.getRatingScore(),
                 rating.getRatingReview()
@@ -260,11 +300,36 @@ public class ComicCatalogService {
                 .bodyToMono(Rating.class)
                 .block(REQUEST_TIMEOUT);
     }
-    // verify if a comic exists
-    private void verifyComicExists(Rating rating) {
-        if (rating.getComicId() != null) {
-            getComic(rating.getComicId());
+    // verify if a comic exists and is eligible for rating
+    private void verifyComicIsInLibrary(Rating rating) {
+        if (rating.getComicId() == null) {
+            return;
         }
+
+        Comic comic = getComic(rating.getComicId());
+        if (!isLibraryComic(comic)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Wanted comics must be moved to library before rating");
+        }
+    }
+
+    public boolean isLibraryComic(UUID comicId) {
+        return isLibraryComic(getComic(comicId));
+    }
+
+    private boolean isLibraryComic(Comic comic) {
+        return STATUS_LIBRARY.equals(effectiveStatus(comic));
+    }
+
+    private boolean isWantedComic(Comic comic) {
+        return STATUS_WANTED.equals(effectiveStatus(comic));
+    }
+
+    private String effectiveStatus(Comic comic) {
+        String status = comic.getComicStatus();
+        if (status == null || status.isBlank()) {
+            return STATUS_LIBRARY;
+        }
+        return status.trim().toUpperCase();
     }
     // delete Rating
     private void deleteRatingForComic(UUID comicId) {

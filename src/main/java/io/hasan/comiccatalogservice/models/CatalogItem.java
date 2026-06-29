@@ -10,6 +10,7 @@ public class CatalogItem {
     private Integer comicStartYear;
     private String comicDesc;
     private String comicImagePath;
+    private String comicStatus;
     private UUID ratingId;
     private Integer ratingScore;
     private String ratingReview;
@@ -17,12 +18,17 @@ public class CatalogItem {
     // constructors
     public CatalogItem(){};
     public CatalogItem(UUID comicId, String comicTitle, String comicIssue, Integer comicStartYear, String comicDesc, String comicImagePath, UUID ratingId, Integer ratingScore, String ratingReview) {
+        this(comicId, comicTitle, comicIssue, comicStartYear, comicDesc, comicImagePath, "LIBRARY", ratingId, ratingScore, ratingReview);
+    }
+
+    public CatalogItem(UUID comicId, String comicTitle, String comicIssue, Integer comicStartYear, String comicDesc, String comicImagePath, String comicStatus, UUID ratingId, Integer ratingScore, String ratingReview) {
         this.comicId = comicId;
         this.comicTitle = comicTitle;
         this.comicIssue = comicIssue;
         this.comicStartYear = comicStartYear;
         this.comicDesc = comicDesc;
         this.comicImagePath = comicImagePath;
+        this.comicStatus = comicStatus;
         this.ratingId = ratingId;
         this.ratingScore = ratingScore;
         this.ratingReview = ratingReview;}
@@ -40,6 +46,8 @@ public class CatalogItem {
     public void setComicDesc(String comicDesc) {this.comicDesc = comicDesc;}
     public String getComicImagePath() {return comicImagePath;}
     public void setComicImagePath(String comicImagePath) {this.comicImagePath = comicImagePath;}
+    public String getComicStatus() {return comicStatus;}
+    public void setComicStatus(String comicStatus) {this.comicStatus = comicStatus;}
     public UUID getRatingId() {return ratingId;}
     public void setRatingId(UUID ratingId) {this.ratingId = ratingId;}
     public Integer getRatingScore() {return ratingScore;}

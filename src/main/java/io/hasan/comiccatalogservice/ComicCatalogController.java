@@ -33,6 +33,11 @@ public class ComicCatalogController {
     public List<CatalogItem> getCatalog() {
         return comicCatalogService.getCatalog();}
 
+    // GET all wanted comics
+    @GetMapping("/wanted")
+    public List<CatalogItem> getWantedCatalog() {
+        return comicCatalogService.getWantedCatalog();}
+
     // retrieve ONE comic + its rating
     @GetMapping("/{id}")
     public CatalogItem getCatalogItem(@PathVariable UUID id) {
@@ -43,6 +48,17 @@ public class ComicCatalogController {
     public ResponseEntity<Comic> addComic(@RequestBody Comic comic) {
         Comic created = comicCatalogService.addComic(comic);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);}
+
+    // send request to create one wanted Comic entry
+    @PostMapping("/wanted")
+    public ResponseEntity<Comic> addWantedComic(@RequestBody Comic comic) {
+        Comic created = comicCatalogService.addWantedComic(comic);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);}
+
+    // move a wanted Comic entry into the main library
+    @PutMapping("/wanted/{id}/move-to-library")
+    public Comic moveWantedComicToLibrary(@PathVariable UUID id) {
+        return comicCatalogService.moveWantedComicToLibrary(id);}
 
     // send request to update a Comic entry
     @PutMapping("/comics/{id}")

@@ -11,6 +11,7 @@ public class Comic {
     private String comicStartYear;
     private String comicDesc;
     private String comicImagePath;
+    private String comicStatus;
 
     // constructor
     public Comic() {}
@@ -33,4 +34,6 @@ public class Comic {
     public void setComicDesc(String comicDesc) {this.comicDesc = comicDesc;}
     public String getComicImagePath() {return comicImagePath;}
     public void setComicImagePath(String comicImagePath) {this.comicImagePath = comicImagePath;}
+    public String getComicStatus() {return comicStatus;}
+    public void setComicStatus(String comicStatus) {this.comicStatus = comicStatus;}
 }
